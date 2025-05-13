@@ -5,13 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VIM Coordinate Calculator</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 0 20px;
-      line-height: 1.6;
-    }
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
     h1 { text-align: center; margin-bottom: 20px; }
     label { display: block; margin: 10px 0 5px; }
     input, select, button { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
@@ -47,6 +41,9 @@
     <label for="beta">Lateral offset β (mm)</label>
     <input id="beta" type="number" value="14" step="0.1">
 
+    <label for="vertical">Vertical offset δ (mm)<br><small>Superior (+) or Inferior (–) relative to AC–PC plane</small></label>
+    <input id="vertical" type="number" value="0" step="0.1">
+
     <label for="side">Side</label>
     <select id="side">
       <option value="left">Left</option>
@@ -72,6 +69,8 @@
         alert('Please enter valid numeric coordinates for AC and PC.');
         return;
       }
+
+      // Compute AC-PC vector
       const v = [acVals[0] - pcVals[0], acVals[1] - pcVals[1], acVals[2] - pcVals[2]];
       const L = Math.hypot(v[0], v[1], v[2]);
       const u = v.map(c => c / L);
@@ -86,21 +85,28 @@
         alpha = (percent / 100) * L;
       }
 
-      // Lateral vector
+      // Lateral unit vector
       let lateral = [-u[1], u[0], 0];
       const latNorm = Math.hypot(lateral[0], lateral[1]);
       lateral = lateral.map((c, i) => i < 2 ? c / latNorm : 0);
 
+      // Lateral offset β
       const betaVal = parseFloat(document.getElementById('beta').value);
       const side = document.getElementById('side').value;
       const beta = (side === 'left' ? -betaVal : betaVal);
 
+      // Vertical offset δ
+      const delta = parseFloat(document.getElementById('vertical').value);
+      const vertical = [0, 0, 1];
+
+      // Compute final VIM
       const vim = [
-        pcVals[0] + alpha * u[0] + beta * lateral[0],
-        pcVals[1] + alpha * u[1] + beta * lateral[1],
-        pcVals[2] + alpha * u[2] + beta * lateral[2]
+        pcVals[0] + alpha * u[0] + beta * lateral[0] + delta * vertical[0],
+        pcVals[1] + alpha * u[1] + beta * lateral[1] + delta * vertical[1],
+        pcVals[2] + alpha * u[2] + beta * lateral[2] + delta * vertical[2]
       ];
 
+      // Display result
       document.getElementById('result').innerHTML = `
         <h2>Calculated VIM Coordinates</h2>
         <p><strong>x:</strong> ${vim[0].toFixed(3)} mm</p>
