@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIM Coordinate Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007BFF;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #result h2 {
+      margin-top: 20px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>VIM Coordinate Calculator</h1>
+  <form id="calcForm" onsubmit="return false;">
+    <label for="ac">AC coordinates (x y z)</label>
+    <input id="ac" type="text" placeholder="e.g. 1.23 2.34 3.45">
+
+    <label for="pc">PC coordinates (x y z)</label>
+    <input id="pc" type="text" placeholder="e.g. 4.56 5.67 6.78">
+
+    <label for="side">Side</label>
+    <select id="side">
+      <option value="left">Left</option>
+      <option value="right">Right</option>
+    </select>
+
+    <button type="button" onclick="calculate()">Calculate VIM</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    function calculate() {
+      const acVals = document.getElementById('ac').value.trim().split(/\s+/).map(Number);
+      const pcVals = document.getElementById('pc').value.trim().split(/\s+/).map(Number);
+      if (acVals.length !== 3 || pcVals.length !== 3 || acVals.some(isNaN) || pcVals.some(isNaN)) {
+        alert('Please enter valid numeric coordinates for AC and PC.');
+        return;
+      }
+      const side = document.getElementById('side').value;
+      const alpha = 6.0;
+      const betaVal = 14.0;
+
+      // Vector from PC to AC
+      const v = [acVals[0] - pcVals[0], acVals[1] - pcVals[1], acVals[2] - pcVals[2]];
+      const L = Math.hypot(v[0], v[1], v[2]);
+
+      // Unit vector along AC→PC
+      const u = v.map(c => c / L);
+
+      // Lateral unit vector in axial plane
+      let lateral = [-u[1], u[0], 0];
+      const latNorm = Math.hypot(lateral[0], lateral[1]);
+      lateral = lateral.map((c, i) => i < 2 ? c / latNorm : 0);
+
+      // Determine lateral sign
+      const beta = (side === 'left' ? -betaVal : betaVal);
+
+      // Compute VIM coordinates
+      const vim = [
+        pcVals[0] + alpha * u[0] + beta * lateral[0],
+        pcVals[1] + alpha * u[1] + beta * lateral[1],
+        pcVals[2] + alpha * u[2] + beta * lateral[2]
+      ];
+
+      // Display Result
+      document.getElementById('result').innerHTML = `
+        <h2>Calculated VIM Coordinates</h2>
+        <p><strong>x:</strong> ${vim[0].toFixed(3)} mm</p>
+        <p><strong>y:</strong> ${vim[1].toFixed(3)} mm</p>
+        <p><strong>z:</strong> ${vim[2].toFixed(3)} mm</p>
+      `;
+    }
+  </script>
+</body>
+</html>
